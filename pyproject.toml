@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strands-telegram-listener"
-version = "1.0.0"
+version = "1.0.1"
 description = "Real-time Telegram message processing with AI-powered responses for Strands Agents"
 readme = "README.md"
 license = {text = "MIT"}
