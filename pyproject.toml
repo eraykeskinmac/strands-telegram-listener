@@ -34,7 +34,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "strands>=1.0.0",
+    "strands-agents",
     "requests>=2.25.0",
 ]
 
@@ -62,11 +62,11 @@ telegram = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/strands-agents/strands-telegram-listener"
-Documentation = "https://github.com/strands-agents/strands-telegram-listener#readme"
-Repository = "https://github.com/strands-agents/strands-telegram-listener.git"
-"Bug Tracker" = "https://github.com/strands-agents/strands-telegram-listener/issues"
-Changelog = "https://github.com/strands-agents/strands-telegram-listener/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/eraykeskinmac/strands-telegram-listener"
+Documentation = "https://github.com/eraykeskinmac/strands-telegram-listener#readme"
+Repository = "https://github.com/eraykeskinmac/strands-telegram-listener.git"
+"Bug Tracker" = "https://github.com/eraykeskinmac/strands-telegram-listener/issues"
+Changelog = "https://github.com/eraykeskinmac/strands-telegram-listener/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]

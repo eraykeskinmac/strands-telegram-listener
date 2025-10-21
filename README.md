@@ -115,7 +115,7 @@ export STRANDS_TELEGRAM_AUTO_REPLY="true"
 export STRANDS_TELEGRAM_LISTEN_ONLY_TAG="@mybot"
 
 # Optional: Number of events to retrieve by default
-export TELEGRAM_DEFAULT_EVENT_COUNT="20"
+export TELEGRAM_DEFAULT_EVENT_COUNT="200"
 ```
 
 ### Advanced Examples

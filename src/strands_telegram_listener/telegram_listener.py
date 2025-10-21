@@ -136,7 +136,7 @@ last_update_id: int = 0
 class TelegramListener:
     """
     Real-time Telegram message processor with agent integration.
-    
+
     This class handles long polling from Telegram's getUpdates API,
     processes messages through Strands agents, and manages event storage.
     """
@@ -148,7 +148,7 @@ class TelegramListener:
         self.thread = None
         self.bot_info = None
         self.last_update_id = 0
-        
+
         if not self.bot_token:
             raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
 
@@ -157,8 +157,7 @@ class TelegramListener:
         if self.bot_info is None:
             try:
                 response = requests.get(
-                    f"https://api.telegram.org/bot{self.bot_token}/getMe",
-                    timeout=10
+                    f"https://api.telegram.org/bot{self.bot_token}/getMe", timeout=10
                 )
                 if response.status_code == 200:
                     self.bot_info = response.json().get("result", {})
@@ -179,11 +178,11 @@ class TelegramListener:
                 "timestamp": time.time(),
                 "update_id": event_data.get("update_id"),
             }
-            
+
             EVENTS_DIR.mkdir(parents=True, exist_ok=True)
             with open(EVENTS_FILE, "a", encoding="utf-8") as f:
                 f.write(json.dumps(event_record, ensure_ascii=False) + "\n")
-                
+
         except Exception as e:
             logger.error(f"Error storing event: {e}")
 
@@ -192,22 +191,22 @@ class TelegramListener:
         # Skip if no message
         if not message:
             return False
-            
+
         # Skip our own messages
         if message.get("from", {}).get("is_bot"):
             return False
-            
+
         # Skip if from our bot user
         bot_info = self._get_bot_info()
         if message.get("from", {}).get("id") == bot_info.get("id"):
             return False
-            
+
         # Check for listen-only tag
         listen_only_tag = os.environ.get("STRANDS_TELEGRAM_LISTEN_ONLY_TAG")
         message_text = message.get("text", "")
         if listen_only_tag and listen_only_tag not in message_text:
             return False
-            
+
         return True
 
     def _process_message(self, message: Dict):
@@ -222,11 +221,15 @@ class TelegramListener:
             text = message.get("text", "")
             user = message.get("from", {})
             message_id = message.get("message_id")
-            
+
             # Get recent events for context
-            event_count = int(os.getenv("TELEGRAM_DEFAULT_EVENT_COUNT", "20"))
+            event_count = int(os.getenv("TELEGRAM_DEFAULT_EVENT_COUNT", "200"))
             recent_events = self._get_recent_events(event_count)
-            event_context = f"\nRecent Telegram Events: {json.dumps(recent_events)}" if recent_events else ""
+            event_context = (
+                f"\nRecent Telegram Events: {json.dumps(recent_events)}"
+                if recent_events
+                else ""
+            )
 
             # Create agent with Telegram system prompt
             tools = list(self.agent.tool_registry.registry.values())
@@ -251,13 +254,15 @@ class TelegramListener:
             user_name = user.get("first_name", "User")
             username = user.get("username", "")
             user_display = f"{user_name} (@{username})" if username else user_name
-            
+
             prompt = f"[Chat ID: {chat_id}] {user_display} says: {text}"
             response = agent(prompt)
 
             # Send response if auto-reply is enabled
             if response and str(response).strip():
-                auto_reply = os.getenv("STRANDS_TELEGRAM_AUTO_REPLY", "false").lower() == "true"
+                auto_reply = (
+                    os.getenv("STRANDS_TELEGRAM_AUTO_REPLY", "false").lower() == "true"
+                )
                 if auto_reply:
                     self._send_response(chat_id, str(response).strip(), message_id)
 
@@ -268,19 +273,15 @@ class TelegramListener:
         """Send response message to Telegram."""
         try:
             url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-            payload = {
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "HTML"
-            }
-            
+            payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+
             if reply_to_message_id:
                 payload["reply_to_message_id"] = reply_to_message_id
 
             response = requests.post(url, json=payload, timeout=10)
             if response.status_code != 200:
                 logger.error(f"Error sending response: {response.text}")
-                
+
         except Exception as e:
             logger.error(f"Error sending response: {e}")
 
@@ -307,7 +308,7 @@ class TelegramListener:
     def _polling_loop(self):
         """Main polling loop for getting updates."""
         logger.info("🚀 Starting Telegram polling loop...")
-        
+
         while self.is_running:
             try:
                 # Get updates from Telegram
@@ -315,33 +316,37 @@ class TelegramListener:
                 params = {
                     "offset": self.last_update_id + 1,
                     "timeout": 30,  # Long polling timeout
-                    "limit": 100
+                    "limit": 100,
                 }
-                
+
                 response = requests.get(url, params=params, timeout=35)
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     updates = data.get("result", [])
-                    
+
                     for update in updates:
                         # Store event
                         self._store_event(update)
-                        
+
                         # Update last_update_id
-                        self.last_update_id = max(self.last_update_id, update.get("update_id", 0))
-                        
+                        self.last_update_id = max(
+                            self.last_update_id, update.get("update_id", 0)
+                        )
+
                         # Process message if present
                         if "message" in update:
                             message = update["message"]
                             if self._should_process_message(message):
-                                logger.info(f"Processing message from {message.get('from', {}).get('first_name', 'Unknown')}")
+                                logger.info(
+                                    f"Processing message from {message.get('from', {}).get('first_name', 'Unknown')}"
+                                )
                                 self._process_message(message)
-                                
+
                 else:
                     logger.error(f"Error getting updates: {response.text}")
                     time.sleep(5)  # Wait before retrying
-                    
+
             except requests.exceptions.Timeout:
                 # Timeout is expected with long polling, continue
                 continue
@@ -355,11 +360,11 @@ class TelegramListener:
         """Start the listener in background thread."""
         if self.is_running:
             return "Telegram listener is already running"
-            
+
         self.is_running = True
         self.thread = threading.Thread(target=self._polling_loop, daemon=True)
         self.thread.start()
-        
+
         logger.info("✅ Telegram listener started")
         return "✅ Telegram listener started successfully"
 
@@ -367,11 +372,11 @@ class TelegramListener:
         """Stop the listener."""
         if not self.is_running:
             return "Telegram listener is not running"
-            
+
         self.is_running = False
         if self.thread:
             self.thread.join(timeout=5)
-            
+
         logger.info("✅ Telegram listener stopped")
         return "✅ Telegram listener stopped successfully"
 
@@ -383,7 +388,7 @@ class TelegramListener:
             "last_update_id": self.last_update_id,
             "events_file": str(EVENTS_FILE),
             "auto_reply": os.getenv("STRANDS_TELEGRAM_AUTO_REPLY", "false"),
-            "listen_only_tag": os.getenv("STRANDS_TELEGRAM_LISTEN_ONLY_TAG", "None")
+            "listen_only_tag": os.getenv("STRANDS_TELEGRAM_LISTEN_ONLY_TAG", "None"),
         }
         return json.dumps(status, indent=2)
 
@@ -396,69 +401,69 @@ _telegram_listener: Optional[TelegramListener] = None
 def telegram_listener(action: str, count: int = 20, agent=None) -> str:
     """
     Real-time Telegram message listener with AI-powered responses.
-    
+
     This tool provides background processing of Telegram messages using
     long polling, with intelligent responses powered by Strands agents.
-    
+
     Actions:
         start: Begin listening for Telegram messages in background
         stop: Stop the message listener
         status: Get current listener status and configuration
         get_recent_events: Retrieve recent events from storage
-        
+
     Args:
         action: The action to perform (start, stop, status, get_recent_events)
         count: Number of recent events to retrieve (for get_recent_events)
         agent: Strands agent instance (automatically provided)
-        
+
     Returns:
         str: Status message or event data based on the action
-        
+
     Environment Variables:
         TELEGRAM_BOT_TOKEN: Required bot token from @BotFather
         STRANDS_TELEGRAM_AUTO_REPLY: Set to "true" to enable automatic responses
         STRANDS_TELEGRAM_LISTEN_ONLY_TAG: Only process messages containing this tag
         TELEGRAM_DEFAULT_EVENT_COUNT: Default number of events to retrieve
-        
+
     Examples:
         # Start listening
         telegram_listener(action="start")
-        
+
         # Check status
         telegram_listener(action="status")
-        
+
         # Get recent messages
         telegram_listener(action="get_recent_events", count=10)
-        
+
         # Stop listening
         telegram_listener(action="stop")
     """
     global _telegram_listener
-    
+
     try:
         # Initialize listener if needed
         if _telegram_listener is None and action in ["start", "status"]:
             _telegram_listener = TelegramListener(agent=agent)
-        
+
         if action == "start":
             if _telegram_listener is None:
                 _telegram_listener = TelegramListener(agent=agent)
             return _telegram_listener.start()
-            
+
         elif action == "stop":
             if _telegram_listener:
                 return _telegram_listener.stop()
             return "No listener running"
-            
+
         elif action == "status":
             if _telegram_listener:
                 return _telegram_listener.get_status()
             return "Listener not initialized"
-            
+
         elif action == "get_recent_events":
             if not EVENTS_FILE.exists():
                 return "No events found in storage"
-                
+
             try:
                 with open(EVENTS_FILE, "r", encoding="utf-8") as f:
                     lines = f.readlines()[-count:]
@@ -469,17 +474,17 @@ def telegram_listener(action: str, count: int = 20, agent=None) -> str:
                             events.append(event_data)
                         except json.JSONDecodeError:
                             continue
-                    
+
                     if events:
                         return f"Recent Telegram events:\n{json.dumps(events, indent=2, ensure_ascii=False)}"
                     else:
                         return "No valid events found in storage"
             except Exception as e:
                 return f"Error reading events: {e}"
-                
+
         else:
             return f"Unknown action: {action}. Available: start, stop, status, get_recent_events"
-            
+
     except Exception as e:
         logger.error(f"Error in telegram_listener: {e}", exc_info=True)
         return f"Error: {str(e)}"

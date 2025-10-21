@@ -8,7 +8,7 @@ comprehensive message handling for Strands Agents.
 
 Key Features:
 - Real-time message processing with long polling
-- AI-powered automatic responses  
+- AI-powered automatic responses
 - Background processing in separate threads
 - Event storage and history management
 - Smart message filtering and de-duplication
@@ -67,10 +67,10 @@ agent.tool.telegram_listener(action="start")
 ```
 
 For more examples and documentation, visit:
-https://github.com/strands-agents/strands-telegram-listener
+https://github.com/eraykeskinmac/strands-telegram-listener
 """
 
-from .telegram_listener_tool import telegram_listener
+from .telegram_listener import telegram_listener
 
 __version__ = "1.0.0"
 __author__ = "Strands Community"
@@ -78,18 +78,20 @@ __email__ = "community@strandsagents.com"
 
 __all__ = ["telegram_listener"]
 
+
 # Package metadata
 def get_version():
     """Get package version."""
     return __version__
+
 
 def get_info():
     """Get package information."""
     return {
         "name": "strands-telegram-listener",
         "version": __version__,
-        "description": "Real-time Telegram message processing with AI-powered responses for Strands Agents",
+        "description": "Real-time Telegram message processing with Strands Agents",
         "author": __author__,
         "email": __email__,
-        "url": "https://github.com/strands-agents/strands-telegram-listener"
+        "url": "https://github.com/eraykeskinmac/strands-telegram-listener",
     }
